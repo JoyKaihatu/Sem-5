@@ -1,0 +1,51 @@
+import numpy as np
+import pandas as pd
+
+# Baca dataset dari file Excel
+df_train = pd.read_excel('Dataset.xlsx', sheet_name='Training')
+df_test = pd.read_excel('Dataset.xlsx', sheet_name='Testing')
+# Gantilah nilai 'nol' dengan 0 pada DataFrame
+df_train = df_train.replace('nol', 0)
+df_train = df_train.replace('satu', 1)
+
+# Mengisi nilai-nilai yang hilang dengan nilai rata-rata kolom
+df_train.fillna(df_train.mean(), inplace=True)
+
+
+
+# Pilih fitur (kolom 'U' hingga 'X') dan label (kolom 'Z')
+X_train = df_train[['U', 'V', 'W', 'X']].to_numpy()
+y_train = df_train['Z'].to_numpy()
+X_test = df_test[['U', 'V', 'W', 'X']].to_numpy()
+
+# Pisahkan data training menjadi data training (80%) dan data validasi (20%)
+split_ratio = 0.8
+split_index = int(len(X_train) * split_ratio)
+X_training, X_validation = X_train[:split_index], X_train[split_index:]
+y_training, y_validation = y_train[:split_index], y_train[split_index:]
+
+# Gunakan ElasticNet Regression
+from sklearn.linear_model import ElasticNet
+
+alpha = 0.1  # Ganti dengan parameter alpha yang Anda inginkan
+model = ElasticNet(alpha=alpha)
+
+# Latih model pada data training
+model.fit(X_training, y_training)
+
+# Prediksi berdasarkan data di worksheet kedua
+y_pred_test = model.predict(X_test)
+
+# Tambahkan hasil prediksi ke dalam DataFrame untuk worksheet kedua
+df_test['Z'] = y_pred_test
+
+# Simpan hasil prediksi ke dalam file Excel dengan nama sesuai NRP
+nrp = "c14210208"  # Ganti dengan NRP Anda
+output_file = f"{nrp}.xlsx"
+
+# Hapus openpyxl dari ExcelWriter
+with pd.ExcelWriter(output_file, engine='xlsxwriter') as writer:
+    df_train.to_excel(writer, sheet_name='Training', index=False)
+    df_test.to_excel(writer, sheet_name='Testing', index=False)
+
+print(f"Hasil prediksi disimpan dalam file Excel: {output_file}")
